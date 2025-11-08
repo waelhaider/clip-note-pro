@@ -502,19 +502,6 @@ function renderNotes() {
 
     span.innerHTML = modifiedText; // استخدام innerHTML لعرض الصور بدلاً من textContent
     span.onclick = () => {
-      // إزالة التوسع من جميع الملاحظات الأخرى
-      document.querySelectorAll('.note-preview').forEach(preview => {
-        if (preview !== span) {
-          preview.classList.remove('expanded');
-        }
-      });
-      // إزالة التأثير من جميع الملاحظات الأخرى
-      document.querySelectorAll('.note-box').forEach(box => {
-        if (box !== span.closest('.note-box')) {
-          box.classList.remove('expanded');
-        }
-      });
-
       // تبديل توسع الملاحظة الحالية
       span.classList.toggle("expanded");
 
@@ -770,6 +757,20 @@ function deleteText(index) {
 // 📋 فتح أو إغلاق قائمة الخيارات الزر الصغير
 function toggleMenu(button) {
   const menu = button.nextElementSibling;
+  const currentNoteBox = button.closest('.note-box');
+
+  // إزالة التأثير من جميع الملاحظات الأخرى
+  document.querySelectorAll('.note-box').forEach(box => {
+    if (box !== currentNoteBox) {
+      box.classList.remove('expanded');
+    }
+  });
+
+  // إضافة التأثير للملاحظة الحالية
+  if (currentNoteBox) {
+    currentNoteBox.classList.add('expanded');
+  }
+
   document.querySelectorAll(".action-menu").forEach(m => {
     if (m !== menu) m.classList.add("hidden");
   });
