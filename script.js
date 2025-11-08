@@ -448,7 +448,7 @@ function renderNotes() {
     const div = document.createElement("div");   
  
                 // (تقليل الهامش بين الملاحظات mb)(pt=المسافة بين النص وأعلى الملاحظة من جوا
-    div.className = "note-box relative bg-white border shadow-sm pt-2 mb-1 rounded"; 
+    div.className = "note-box relative bg-[#f3f1fa] border shadow-sm pt-2 mb-1 rounded"; 
     div.style.display = "flex";
     div.style.flexDirection = "column";
 
@@ -502,7 +502,28 @@ function renderNotes() {
 
     span.innerHTML = modifiedText; // استخدام innerHTML لعرض الصور بدلاً من textContent
     span.onclick = () => {
+      // إزالة التوسع من جميع الملاحظات الأخرى
+      document.querySelectorAll('.note-preview').forEach(preview => {
+        if (preview !== span) {
+          preview.classList.remove('expanded');
+        }
+      });
+      // إزالة التأثير من جميع الملاحظات الأخرى
+      document.querySelectorAll('.note-box').forEach(box => {
+        if (box !== span.closest('.note-box')) {
+          box.classList.remove('expanded');
+        }
+      });
+
+      // تبديل توسع الملاحظة الحالية
       span.classList.toggle("expanded");
+
+      // إضافة التأثير للملاحظة الحالية إذا كانت موسعة
+      if (span.classList.contains('expanded')) {
+        span.closest('.note-box').classList.add('expanded');
+      } else {
+        span.closest('.note-box').classList.remove('expanded');
+      }
     };
 
     // مكان كلمة منقول من في المحذوفات
@@ -871,7 +892,7 @@ function toggleSettingsMenu(anchorBtn) {
       console.log(`تم تطبيق --tab-font-size: ${px}px`);
     }
   }
-  //تنسيق قائمة حجم النص 
+  //تنسيق قائمة حجم النص
   function makeRow(label, key, fallbackPx) {
     const row = document.createElement('div');
     row.style.display = 'flex';
@@ -881,14 +902,14 @@ function toggleSettingsMenu(anchorBtn) {
     row.style.padding = '1px'; // تباعد عمودي بين كلمات (ادخال الملاحظات,اسم اللوحة
     row.style.border = '1px solid #a25bbc';
     row.style.borderRadius= '8px'
-    row.style.fontfamily='tahoma';
-    row.style.margin = '0px'; 
+    row.style.fontFamily='tahoma';
+    row.style.margin = '0px';
     row.style.background = ' #ebe7f6';
-    row.style.width = 'min-conten';
-    row.style.whitespace= 'nowrap';
+    row.style.width = '100%';
+    row.style.whiteSpace = 'nowrap';
     const title = document.createElement('div');
     title.textContent = label;
-    title.style.fontSize = '14px';    //حجم خط (ادخال الملاحظات,اسم اللوحة
+    title.style.fontSize = '15px';    //حجم خط (ادخال الملاحظات,اسم اللوحة
     title.style.padding = '3px 3px';  //تباعد عمودي بين مربعات الزائد والناقص
     row.appendChild(title);
 
@@ -932,7 +953,12 @@ function toggleSettingsMenu(anchorBtn) {
 
   makeRow('الإدخال', 'input', 14);
   makeRow('الملاحظات', 'note', 13);
-  makeRow('إسم اللوحة', 'tab', 14);
+  makeRow('اسم اللوحة', 'tab', 14);
+
+  // تعديل عرض القائمة لتجنب السطر الثاني
+  fontMenu.style.width = 'auto';
+  fontMenu.style.minWidth = '150px';
+  fontMenu.style.whiteSpace = 'nowrap';
 
   fontBtn.onclick = (e) => {
     e.stopPropagation();

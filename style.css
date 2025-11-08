@@ -134,6 +134,7 @@ body.modal-open {
   position: relative;
   overflow: hidden; /* منع تجاوز المحتوى */
   text-align: left;
+  border-color: #a25bbc;
 }
 
 /* زر قائمة نسخ ,تحرير مطلق التموضع أسفل يسار، لا يزيد ارتفاع الصندوق */
@@ -431,6 +432,13 @@ body.modal-open {
 
 .action-menu.hidden {
   transform: translateX(-100%);
+}
+
+/* تنسيق الملاحظة الموسعة */
+.note-box.expanded {
+  border-color: #f43f5e !important; /* red-500 */
+  box-shadow: 0 0 6px #f43f5e !important;
+  transition: all 0.3s ease;
 }
 
 /* تنسيق عناصر القائمة الصغيرة */
@@ -932,6 +940,7 @@ body {
   position: static;
   text-align: right;
   max-height: 4.5em; /* 3 أسطر × 1.5 line-height */
+
 }
 
 /* زر حجم النص داخل قائمة الإعدادات لااااااااتعمل */
