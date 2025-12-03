@@ -213,7 +213,11 @@ function deleteCurrentTab() {
 // 🧠 تهيئة البيانات من التخزين المحلي لوكال أو إنشاؤها لأول مرة
 if (!localStorage.getItem("notes") || !localStorage.getItem("tabNames")) {
   localStorage.setItem("notes", JSON.stringify({
-    "home": [], "trash": []
+    "home": [
+      { text: "هذا نص تجريبي للترجمة", createdAt: new Date().toISOString() },
+      { text: "This is a test text for translation", createdAt: new Date().toISOString() }
+    ],
+    "trash": []
   }));
   localStorage.setItem("tabNames", JSON.stringify({
     "home": "الرئيسية", "settings": "اعدادات", "trash": "المحذوفات"
@@ -270,6 +274,15 @@ function safeLocalStorageSet(key, value) {
 
 notes = safeLocalStorageGet("notes", { "home": [], "trash": [] });
 tabNames = safeLocalStorageGet("tabNames", { "home": "الرئيسية", "settings": "اعدادات", "trash": "المحذوفات" });
+
+// إضافة ملاحظات تجريبية إذا كانت اللوحة الرئيسية فارغة
+if (!notes["home"] || notes["home"].length === 0) {
+  notes["home"] = [
+    { text: "هذا نص تجريبي للترجمة", createdAt: new Date().toISOString() },
+    { text: "This is a test text for translation", createdAt: new Date().toISOString() }
+  ];
+  safeLocalStorageSet("notes", notes);
+}
 
 // تأكد من وجود لوحة المحذوفات دائمًا في البيانات
 if (!tabNames["trash"]) {
@@ -423,7 +436,7 @@ function activateFirstTab() {
 }
 
 
-// 🧩 رندر نوت         ازرار نسخ,تحرير,حذف,نقل 
+// 🧩 رندر نوت         ازرار نسخ,تحرير,حذف,نقل
 
 function renderNotes() {
   const container = document.getElementById("notesContainer");
@@ -598,6 +611,16 @@ if (createdAt) {
       menu.classList.add("hidden");
     });
 
+    // زر ترجمة
+    const translateBtn = document.createElement("button");
+    translateBtn.className = "block w-full text-right px-3 py-2 hover:bg-gray-100";
+    translateBtn.textContent = "🌐 ترجمة";
+    translateBtn.addEventListener("click", function(e) {
+      e.stopPropagation();
+      translateNote(index);
+      menu.classList.add("hidden");
+    });
+
     // زر حذف
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "block w-full text-right px-3 py-2 text-red-600 hover:bg-red-100";
@@ -624,6 +647,7 @@ if (createdAt) {
     // تجميع القائمة
     menu.appendChild(copyBtn);
     menu.appendChild(editBtn);
+    menu.appendChild(translateBtn);
     menu.appendChild(deleteBtn);
     menu.appendChild(moveDiv);
 
@@ -664,6 +688,34 @@ function saveNewNote() {
   const input = document.getElementById("newNoteInput");
   const content = input.innerHTML.trim();
   if (content) {
+    // استخراج النص العادي للمقارنة (إزالة HTML)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    const plainText = tempDiv.textContent || tempDiv.innerText || '';
+
+    // التحقق من وجود النص في اللوحة الحالية
+    let isDuplicate = false;
+    for (const note of notes[currentTab]) {
+      let existingText = (typeof note === "object" && note !== null) ? note.text : note;
+      if (existingText) {
+        // استخراج النص العادي من الملاحظة الموجودة
+        const existingTempDiv = document.createElement('div');
+        existingTempDiv.innerHTML = existingText;
+        const existingPlainText = existingTempDiv.textContent || existingTempDiv.innerText || '';
+
+        // مقارنة النصوص (تجاهل الفراغات الزائدة)
+        if (existingPlainText.trim() === plainText.trim()) {
+          isDuplicate = true;
+          break;
+        }
+      }
+    }
+
+    if (isDuplicate) {
+      showToast("⚠️ النص موجود فعلاً في هذه اللوحة");
+      return;
+    }
+
     const noteObj = { text: content, createdAt: new Date().toISOString() };
     notes[currentTab].unshift(noteObj); // أضف الملاحظة في البداية
     safeLocalStorageSet("notes", notes);
@@ -856,8 +908,10 @@ function toggleSettingsMenu(anchorBtn) {
 
   // فتح المحذوفات في أعلى القائمة
   addItem('🗑️المحذوفات', () => switchTab('trash'));
-  addItem('📤 تصدير', exportNotes);
-  addItem('📥 استيراد', importNotes);
+  addItem('📤تصدير كامل', exportNotes);
+  addItem('🔺 تصدير لوحة', exportCurrentTab);
+  addItem('📥استيراد كامل', importNotes);
+  addItem('🔻 استيراد لوحة', importTab);
   addItem('📄استيراد نص', importFromText); // استيراد من ملف نصي عادي
   addItem('➕إضافة لوحة', addNewTab);
   addItem('✏️تعديل لوحة', renameCurrentTab);
@@ -1339,7 +1393,7 @@ function exportNotes() {
   const dateString = `${yyyy}-${mm}-${dd}`;
 
   // 📁 اسم الملف مع التاريخ
-  const filename = `clip-note_backup_${dateString}.json`;
+  const filename = `clip-note-pro-${dateString}.json`;
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1376,6 +1430,60 @@ function importNotes() {
         }
       } catch {
         alert("❌ الملف غير صالح أو تالف");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// استيراد لوحة واحدة
+function importTab() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const importedTab = JSON.parse(reader.result);
+        if (importedTab.tabName && importedTab.notes && Array.isArray(importedTab.notes)) {
+          // إنشاء معرف جديد للوحة إذا كان الاسم موجود
+          let newTabId = importedTab.tabId || findOrCreateTabByName(importedTab.tabName);
+
+          // إذا كان المعرف موجود، أنشئ معرف جديد
+          if (tabNames[newTabId] && newTabId !== importedTab.tabId) {
+            let counter = 1;
+            let baseName = importedTab.tabName;
+            while (tabNames.hasOwnProperty(String(counter))) {
+              counter++;
+            }
+            newTabId = String(counter);
+            tabNames[newTabId] = baseName;
+          } else {
+            tabNames[newTabId] = importedTab.tabName;
+          }
+
+          // إضافة الملاحظات
+          notes[newTabId] = importedTab.notes.map(note => ({
+            text: note.text || note,
+            createdAt: note.createdAt || new Date().toISOString(),
+            lastModified: note.lastModified || new Date().toISOString()
+          }));
+
+          safeLocalStorageSet("tabNames", tabNames);
+          safeLocalStorageSet("notes", notes);
+          renderTabs();
+          switchTab(newTabId);
+          renderNotes();
+          showToast(`✅ تم استيراد لوحة "${importedTab.tabName}" بنجاح`);
+        } else {
+          showToast("❌ الملف لا يحتوي على بيانات لوحة صحيحة");
+        }
+      } catch {
+        showToast("❌ الملف غير صالح أو تالف");
       }
     };
     reader.readAsText(file);
@@ -1646,7 +1754,7 @@ function safeLocalStorageRemove(key) {
 }
 
 // تعديل دالة التصدير لتحديث تاريخ النسخ الاحتياطي
-function exportNotes() {
+async function exportNotes() {
   const data = {
     notes: notes,
     tabNames: tabNames
@@ -1660,19 +1768,102 @@ function exportNotes() {
   const dateString = `${yyyy}-${mm}-${dd}`;
 
   // 📁 اسم الملف مع التاريخ
-  const filename = `clip-note_backup_${dateString}.json`;
+  const filename = `clip-note-pro-${dateString}.json`;
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  try {
+    // التحقق من دعم File System Access API
+    if ('showSaveFilePicker' in window) {
+      // استخدام File System Access API لإظهار مربع حوار حفظ الملف
+      const options = {
+        suggestedName: filename,
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] }
+        }]
+      };
 
-  // تحديث تاريخ آخر نسخ احتياطي
-  updateLastBackupDate();
-  showToast("تم التصدير وتحديث تاريخ النسخ الاحتياطي ✅");
+      const fileHandle = await window.showSaveFilePicker(options);
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+
+      showToast("تم حفظ النسخة الاحتياطية بنجاح ✅");
+    } else {
+      // الطريقة التقليدية كبديل (للمتصفحات التي لا تدعم File System Access API)
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showToast("تم التصدير وتحديث تاريخ النسخ الاحتياطي ✅");
+    }
+
+    // تحديث تاريخ آخر نسخ احتياطي
+    updateLastBackupDate();
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error('خطأ في حفظ الملف:', error);
+      showToast("❌ فشل في حفظ النسخة الاحتياطية");
+    }
+  }
+}
+
+// تصدير اللوحة الحالية فقط
+async function exportCurrentTab() {
+  // التحقق من أننا لسنا في لوحة المحذوفات أو الإعدادات
+  if (currentTab === "trash" || currentTab === "settings") {
+    showToast("❌ لا يمكن تصدير لوحة المحذوفات أو الإعدادات");
+    return;
+  }
+
+  const tabData = {
+    tabName: tabNames[currentTab],
+    tabId: currentTab,
+    notes: notes[currentTab] || []
+  };
+
+  // اسم الملف مع اسم اللوحة
+  const filename = `clip-note-pro-${tabNames[currentTab].replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+
+  try {
+    // التحقق من دعم File System Access API
+    if ('showSaveFilePicker' in window) {
+      // استخدام File System Access API لإظهار مربع حوار حفظ الملف
+      const options = {
+        suggestedName: filename,
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] }
+        }]
+      };
+
+      const fileHandle = await window.showSaveFilePicker(options);
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(tabData, null, 2));
+      await writable.close();
+
+      showToast(`تم تصدير لوحة "${tabNames[currentTab]}" بنجاح ✅`);
+    } else {
+      // الطريقة التقليدية كبديل
+      const blob = new Blob([JSON.stringify(tabData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showToast(`تم تصدير لوحة "${tabNames[currentTab]}" بنجاح ✅`);
+    }
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      console.error('خطأ في حفظ الملف:', error);
+      showToast("❌ فشل في تصدير اللوحة");
+    }
+  }
 }
 
 // وظيفة العودة لأعلى
@@ -1753,9 +1944,15 @@ let currentSourceLang = 'auto';
 let currentTargetLang = 'ar';
 
 // وظيفة الترجمة باستخدام Google Translate API
-function translateText() {
-  const textarea = document.getElementById("editTextarea");
-  const text = textarea.innerText.trim();
+function translateText(providedText = null) {
+  let text;
+  if (providedText !== null) {
+    text = providedText.trim();
+  } else {
+    const textarea = document.getElementById("editTextarea");
+    text = textarea.innerText.trim();
+  }
+
   if (!text) {
     alert("لا يوجد نص للترجمة");
     return;
@@ -1787,6 +1984,20 @@ function translateText() {
   performTranslation(text, currentSourceLang, currentTargetLang).catch(error => {
     console.error('خطأ في الترجمة الأولية:', error);
   });
+}
+
+// وظيفة ترجمة ملاحظة من القائمة
+function translateNote(index) {
+  translatingNoteIndex = index;
+  const noteItem = notes[currentTab][index];
+  let text = (noteItem && typeof noteItem === "object") ? (noteItem.text || "") : noteItem;
+
+  // استخراج النص العادي فقط (إزالة علامات HTML)
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = text;
+  const plainText = tempDiv.textContent || tempDiv.innerText || '';
+
+  translateText(plainText);
 }
 
 // وظيفة تنفيذ الترجمة
@@ -1861,14 +2072,10 @@ function swapLanguages() {
 // إغلاق نافذة الترجمة
 function closeTranslateModal() {
   document.getElementById("translateModal").classList.add("hidden");
-  // لا نزيل modal-open إلا إذا لم تكن نافذة التحرير مفتوحة
-  if (!isEditModalOpen) {
-    document.body.classList.remove("modal-open");
-  }
-  // إزالة قفل التمرير من الجسم عند إغلاق نافذة الترجمة إذا لم تكن نافذة التحرير مفتوحة
-  if (!isEditModalOpen) {
-    document.body.classList.remove("modal-open");
-  }
+  // إزالة قفل التمرير من الجسم
+  document.body.classList.remove("modal-open");
+  // إعادة تعيين فهرس الملاحظة المترجمة
+  translatingNoteIndex = null;
 }
 
 // نسخ النص الأصلي
@@ -1938,6 +2145,9 @@ let isEditModalOpen = false;
 
 // متغير لحفظ تموضع الصور في نافذة التحرير
 let editModalImagePositions = {};
+
+// متغير لتتبع رقم الملاحظة المترجمة من القائمة
+let translatingNoteIndex = null;
 
 // وظيفة تنسيق تلقائي للنص العربي والإنجليزي
 function autoFormatTextDirection(textarea) {
@@ -2159,21 +2369,46 @@ function saveTranslationEdit() {
       return;
     }
 
-    // الحصول على النص الأصلي من نافذة الترجمة
-    const originalText = document.getElementById("originalText").value.trim();
+    // التحقق من ما إذا كنا نترجم ملاحظة من القائمة أو من نافذة التحرير
+    if (translatingNoteIndex !== null) {
+      // حفظ في الملاحظة الأصلية
+      const noteItem = notes[currentTab][translatingNoteIndex];
+      if (noteItem && typeof noteItem === "object") {
+        noteItem.text = translatedText;
+        noteItem.lastModified = new Date().toISOString();
+      } else {
+        notes[currentTab][translatingNoteIndex] = {
+          text: translatedText,
+          createdAt: new Date().toISOString(),
+          lastModified: new Date().toISOString()
+        };
+      }
 
-    // حفظ النص المترجم في نافذة التحرير
-    const editTextarea = document.getElementById("editTextarea");
-    if (editTextarea) {
-      editTextarea.textContent = translatedText;
-      // تطبيق التنسيق التلقائي
-      autoFormatTextDirection(editTextarea);
+      // حفظ في localStorage
+      safeLocalStorageSet("notes", notes);
+
+      // تحديث عرض الملاحظات
+      renderNotes();
+
+      // إعادة تعيين الفهرس
+      translatingNoteIndex = null;
+
+      showToast('✅ تم حفظ النص المترجم في الملاحظة');
+    } else {
+      // حفظ في نافذة التحرير (السلوك القديم)
+      const editTextarea = document.getElementById("editTextarea");
+      if (editTextarea) {
+        editTextarea.textContent = translatedText;
+        // تطبيق التنسيق التلقائي
+        autoFormatTextDirection(editTextarea);
+      }
+
+      showToast('✅ تم حفظ النص المترجم في نافذة التحرير');
     }
 
     // إغلاق نافذة الترجمة
     closeTranslateModal();
 
-    showToast('✅ تم حفظ النص المترجم في نافذة التحرير');
   } catch (error) {
     console.error('خطأ في حفظ التعديل من نافذة الترجمة:', error);
     showToast('❌ خطأ في حفظ التعديل');

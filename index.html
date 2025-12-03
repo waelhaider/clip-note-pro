@@ -34,11 +34,11 @@
 
 <!-- 🧭شريط التحكم(حفظ.تراجع.اعادة)-مرن على سطر واحد -->
 <div class="pt-[1px] pb-[0px] px-12 bg-#d0c4f6
-border-color-#a25bbc 
+border-color-#a25bbc
 border-[0px]
 border-[#a25bbc]
 rounded-[5px]
-flex flex-nowrap overflow-x-auto gap-1 justify-center w-full"> <!-- تقليل المسافة أعلى واسفل شريط الأزرار + محاذاة للوسط + مسافة جانبية -->
+flex flex-nowrap gap-1 justify-center w-full"> <!-- تقليل المسافة أعلى واسفل شريط الأزرار + محاذاة للوسط + مسافة جانبية -->
 
   <button onclick="saveNewNote()" class="tab-btn" style="background-color:#16a34a;color:white;border-color:#16a34a;padding:2px 2px;font-size:14px;">✅ حفظ</button>
 
@@ -67,9 +67,22 @@ flex flex-nowrap overflow-x-auto gap-1 justify-center w-full"> <!-- تقليل �
     <!-- محتويات نافذة التحرير-->
     <div id="editTextarea" contenteditable="true" placeholder="داخل النافذة..." class="edit-textarea"></div>
 
-      <!-- نافذة الترجمة المظللة -->
-      <div id="translateModal" class="hidden translate-modal-overlay">
-        <div class="translate-modal-wrapper">
+    <div class="edit-modal-buttons">
+      <button onclick="saveEditedText()" class="edit-save-btn">💾حفظ</button>
+      <button type="button" onclick="undoEditText()" class="edit-undo-btn"> تراجع</button>
+      <button type="button" onclick="redoEditText()" class="edit-redo-btn"> إعادة</button>
+      <!-- أزرار تكبير/تصغير خط في نافذة التحرير -->
+      <button type="button" onclick="increaseEditFont()" class="edit-font-increase-btn">+ معاينة</button>
+      <button type="button" onclick="decreaseEditFont()" class="edit-font-decrease-btn">− معاينة</button>
+      <!-- زر الترجمة -->
+      <button type="button" onclick="translateText()" class="edit-translate-btn">ترجمة</button>
+    </div>
+    </div>
+	</div>
+
+<!-- 🌐 نافذة الترجمة المستقلة -->
+<div id="translateModal" class="hidden translate-modal-overlay">
+  <div class="translate-modal-wrapper">
     <!--حاوية التبديل بين لغات الترجمة-->
     <div class="translate-language-controls">
       <div class="translate-language-selectors">
@@ -129,21 +142,8 @@ flex flex-nowrap overflow-x-auto gap-1 justify-center w-full"> <!-- تقليل �
       <button onclick="saveTranslationEdit()" class="translate-save-btn">حفظ تعديل الترجمة</button>
       <button onclick="copyTranslatedText()" class="translated-copy-btn">🧮 نسخ الترجمة</button>
     </div>
-        </div>
-      </div>
-
-    <div class="edit-modal-buttons">
-      <button onclick="saveEditedText()" class="edit-save-btn">💾حفظ</button>
-      <button type="button" onclick="undoEditText()" class="edit-undo-btn">↩️ تراجع</button>
-      <button type="button" onclick="redoEditText()" class="edit-redo-btn">↪️ إعادة</button>
-      <!-- أزرار تكبير/تصغير خط في نافذة التحرير -->
-      <button type="button" onclick="increaseEditFont()" class="edit-font-increase-btn">+ معاينة</button>
-      <button type="button" onclick="decreaseEditFont()" class="edit-font-decrease-btn">− معاينة</button>
-      <!-- زر الترجمة -->
-      <button type="button" onclick="translateText()" class="edit-translate-btn">🌐 ترجمة</button>
-    </div>
-    </div>
-	</div>
+  </div>
+</div>
 
 </body>
 </html>

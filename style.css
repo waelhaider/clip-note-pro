@@ -1,10 +1,12 @@
 /* 🎯 إعدادات عامة للصفحة */
 body {
-   font-family: 'Segoe UI', sans-serif;
-   direction: rtl;
-   background-color: #e1d9f9;
-   margin: 0;
-   padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  direction: rtl;
+  background-color: #e1d9f9;
+  margin: 0;
+  padding: 0;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* منع التمرير في النصوص الأساسية عندما تكون نافذة التحرير أو الترجمة مفتوحة */
@@ -194,8 +196,9 @@ body.modal-open {
 /* تباعد أسطر نص التحرير نهائي */
 #editTextarea {
   line-height: 1.5;
-  word-wrap: break-word;
-  white-space: pre-line;
+  overflow-wrap: break-word;
+  white-space: break-spaces;
+  max-width:100%;
 }
 
 /* فئات لتحديد موضع الصورة - صور على اليمين */
@@ -278,7 +281,7 @@ body.modal-open {
   #editModal button[onclick="saveEditedText()"] {
     background-color: #28a745 !important;
     font-weight: bold !important;
-    min-width: 60px !important;
+    min-width: 50px !important;
   }
 
   /* تحسين مساحة نافذة التحرير */
@@ -295,7 +298,7 @@ body.modal-open {
     }
 
     .edit-modal-buttons button {
-      padding: 5px 5px !important;
+      padding: 5px 3px !important;
       font-size: 0.78rem !important;/*حجم خط حفظ , ترجمة*/
       margin: 0px !important;
       flex-shrink: 0 !important;
@@ -329,6 +332,7 @@ body.modal-open {
   #editTextarea img {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
   }
 }
 
@@ -743,7 +747,7 @@ body.modal-open {
     flex: 1;
     min-width: 80px;
     font-size: 12px;
-    padding: 6px 1px;/*طول+عرض ازرار الترجمة نهائي*/
+    padding: 5px 0px;/*طول+عرض ازرار الترجمة نهائي*/
   }
 }
 
@@ -751,13 +755,12 @@ body.modal-open {
 /* --- استجابة للجوال نهائي --- */
 @media (max-width: 768px) {
   .edit-modal-buttons {
-    gap: 1px; /* تباعد أصغر جداً للضغط */
+    gap: 0px; /* تباعد مناسب للضغط */
     margin: 2px 2px; /* هوامش أصغر */
     padding-bottom: 8px; /* حشوة سفلية أصغر */
-    flex-wrap: nowrap; /* منع النزول لسطر جديد */
-    overflow-x: auto; /* إضافة تمرير أفقي إذا لزم الأمر */
-    justify-content: flex-start; /* محاذاة للبداية للسماح بالتمرير */
-    -webkit-overflow-scrolling: touch; /* تمرير سلس على iOS */
+    flex-wrap: wrap; /* السماح بالنزول لسطر جديد عند الحاجة */
+    justify-content: center; /* توسيط الأزرار */
+    overflow-x: visible; /* إزالة التمرير الأفقي */
   }
 
   .edit-save-btn,
@@ -925,9 +928,9 @@ body {
 
 .note-preview {
   display: -webkit-box;
-  line-clamp: 3; /* 👈 هذا السطر يجعل العرض = 3 أسطر كحد أقصى */
-  -webkit-line-clamp: 3; /* 👈 هذا السطر يجعل العرض = 3 أسطر كحد أقصى */
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.5; /* توحيد ارتفاع السطر لضبط تموضع النص */
@@ -977,7 +980,7 @@ body {
 
 .menu, .move-menu {
   /* تحسين ظهور القوائم على الجوال */
-  max-height: 60vh;
+  max-height: 65vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1004,7 +1007,7 @@ body {
 }
 
 .scroll-to-top-btn:hover {
-  background-color: #0056b3;
+  /*background-color: #0056b3;*/
   transform: scale(1.1);
 }
 
@@ -1108,6 +1111,7 @@ body {
   border: 1px solid #dee2e6;
   border-radius: 6px;
   transition: all 0.2s ease;
+  -webkit-user-select: none;
   user-select: none;
   max-width: 250px; /* تقليل عرض المستطيلات */
   width: 100%;
@@ -1131,6 +1135,7 @@ body {
   color: #6c757d;
   margin-left: 10px;
   cursor: grab;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -1413,13 +1418,13 @@ body.night .snooze-btn {
 .translate-language-selectors {
   display: flex;
   align-items: center;
-  gap: 8px; /* تباعد بين العناصر */
+  gap: 5px; /* تباعد بين العناصر */
   flex: 1;
 }
 
 /* --- أحجام --- */
 .translate-lang-select {
-  padding: 6px 8px; /*  تباعد زري اختيار الترجمة */
+  padding: 3px 4px; /*  تباعد زري اختيار الترجمة */
   border: 1px solid #9B6C8C;
   border-radius: 6px;
   font-size: 14px; /* حجم الخط */
@@ -1529,7 +1534,7 @@ body.night .snooze-btn {
   border-radius: 6px;
   font-size: 14px; /* حجم الخط */
   align-self: flex-start;
-  margin: 3px 3px; /* نسخ الاصلي+الترجمة نهائي  */
+  margin: 0px 0px; /* نسخ الاصلي+الترجمة نهائي  */
 }
 
 .original-copy-btn {
@@ -1607,7 +1612,7 @@ body.night .snooze-btn {
 /* أزرار نافذة الترجمة */
 .translate-modal-buttons {
   display: flex;
-  gap: 8px;/*ملغاة*/
+  gap: 2px;/*ملغاة*/
   align-items: center;
   justify-content: center;
   margin-top: 0px;/*موقع أزرار نافذة الترجمة نهائي*/
@@ -1690,7 +1695,7 @@ body.night .snooze-btn {
   }
 /*موقع أزرار الترجمة نهائي*/
   .translate-modal-buttons {
-    gap: 10px;
+    gap: 4px;
     padding: 4px;
   }
 
