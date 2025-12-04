@@ -647,7 +647,7 @@ body.modal-open {
 @supports (-ms-ime-align: auto) or (-webkit-appearance: none) {
   .edit-modal-wrapper {
     height: 80vh !important; /* ارتفاع أصغر لتجنب شريط المتصفح */
-    max-height: 85vh !important;
+    max-height: 80vh !important;
     margin-top: 7.5vh !important; /* هوامش علوية لتجنب شريط العنوان */
     margin-bottom: 7.5vh !important; /* هوامش سفلية لتجنب شريط التنقل */
   }
@@ -1749,4 +1749,5 @@ body.night .snooze-btn {
     font-size: 14px;/*حجم خط نسخ الاصلي والترجمة نهائي*/
   }
 }
+
 
