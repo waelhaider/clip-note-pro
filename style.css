@@ -253,7 +253,7 @@ body.modal-open {
   #editModal > div {
     margin: 1vh 1px;
     max-width: 99%;
-    width: 98vw;/*عرض نافذة التحرير نهائي*/
+    width: 96vw;/*عرض نافذة التحرير نهائي*/
     max-height: 90vh;
     padding: 1px;
     display: flex;
@@ -568,7 +568,7 @@ body.modal-open {
 #editModal {
   position: fixed;
   inset: 0;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0,0,0,0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -629,7 +629,7 @@ body.modal-open {
   border-radius: 10px;
   width: 90vw; /* عرض النافذة */
   max-width: 600px; /* الحد الأقصى للعرض */
-  height: 70vh; /* ارتفاع النافذة */
+  height: 77vh; /* ارتفاع النافذة */
   max-height: 80vh; /* الحد الأقصى للارتفاع */
   display: flex;
   flex-direction: column;
@@ -637,7 +637,7 @@ body.modal-open {
   align-items: stretch;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
   /* دعم تقلص الارتفاع مع الكيبورد */
   height: 100dvh;
   max-height: 100dvh;
@@ -646,10 +646,11 @@ body.modal-open {
 /*  دعم خاص لمتصفح Edge نهائي*/
 @supports (-ms-ime-align: auto) or (-webkit-appearance: none) {
   .edit-modal-wrapper {
-    height: 80vh !important; /* ارتفاع أصغر لتجنب شريط المتصفح */
-    max-height: 80vh !important;
-    margin-top: 7.5vh !important; /* هوامش علوية لتجنب شريط العنوان */
+    height: 77vh !important; /* ارتفاع أصغر لتجنب شيرط المتصفح */
+    max-height: 85vh !important;
+    margin-top: 0vh !important; /* هوامش علوية لتجنب شريط العنوان */
     margin-bottom: 7.5vh !important; /* هوامش سفلية لتجنب شريط التنقل */
+    top: 25px;
   }
 }
 
@@ -1369,11 +1370,14 @@ body.night .snooze-btn {
 .translate-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.3); /* خلفية مظللة بلون متوسط */
+  background: rgba(0,0,0,0.7); /* خلفية مظللة بلون متوسط */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1001;
+  /*top: 35px;
+  padding: 4vh 3px 4vh 6px;
+  height: 76vh;*/
   animation: modalSlideIn 0.3s ease-out;
 }
 
@@ -1396,9 +1400,9 @@ body.night .snooze-btn {
 /* دعم خاص لمتصفح Edge */
 @supports (-ms-ime-align: auto) or (-webkit-appearance: none) {
   .translate-modal-wrapper {
-    height: 85vh !important; /* ارتفاع أصغر لتجنب شريط المتصفح */
+    height: 75vh !important; /* ارتفاع أصغر لتجنب شريط المتصفح */
     max-height: 85vh !important;
-    margin-top: 7.5vh !important; /* هوامش علوية لتجنب شريط العنوان */
+    margin-top: 2vh !important; /* هوامش علوية لتجنب شريط العنوان */
     margin-bottom: 7.5vh !important; /* هوامش سفلية لتجنب شريط التنقل */
   }
 }
@@ -1708,10 +1712,10 @@ body.night .snooze-btn {
 /* تخصيص إضافي للشاشات الصغيرة جداً */
 @media (max-width: 480px) {
   .translate-modal-wrapper {
-    width: 98vw; /* عرض أكبر للشاشات الصغيرة جداً */
+    width: 96vw; /* عرض أكبر للشاشات الصغيرة جداً */
     height: 95vh; /* ارتفاع أكبر */
     max-height: 95vh;
-    margin: 2.5vh auto;
+    margin: 0px 3px 10px 7px;
   }
 
   .translate-language-controls {
@@ -1749,5 +1753,3 @@ body.night .snooze-btn {
     font-size: 14px;/*حجم خط نسخ الاصلي والترجمة نهائي*/
   }
 }
-
-
