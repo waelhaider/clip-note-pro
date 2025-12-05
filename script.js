@@ -214,8 +214,8 @@ function deleteCurrentTab() {
 if (!localStorage.getItem("notes") || !localStorage.getItem("tabNames")) {
   localStorage.setItem("notes", JSON.stringify({
     "home": [
-      { text: "هذا نص تجريبي للترجمة", createdAt: new Date().toISOString() },
-      { text: "This is a test text for translation", createdAt: new Date().toISOString() }
+      { text: "يسعدني انجاز هذا العمل الذي حلمت به ༻ wael Ai ༺ ", createdAt: new Date().toISOString() },
+      { text: "لو خيروني بينك وبين عيني , لقلك فداك .. وهل يفيدني بصري إن لن أراك", createdAt: new Date().toISOString() }
     ],
     "trash": []
   }));
