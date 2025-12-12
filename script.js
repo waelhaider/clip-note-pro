@@ -436,6 +436,57 @@ function activateFirstTab() {
 }
 
 
+// وظيفة عرض الصورة بحجمها الكامل
+function showImageModal(imageSrc) {
+  // حفظ موضع التمرير
+  imageModalScrollY = window.scrollY;
+
+  // إنشاء النافذة إذا لم تكن موجودة
+  let modal = document.getElementById('imageModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'imageModal';
+    modal.className = 'image-modal-overlay';
+    modal.innerHTML = `
+      <div class="image-modal-content">
+        <button onclick="closeImageModal()" class="image-modal-close">✖</button>
+        <img class="image-modal-img" src="" alt="صورة مكبرة">
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // إغلاق عند الضغط خارج الصورة
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeImageModal();
+      }
+    });
+  }
+
+  // البحث عن الصورة الأصلية للحصول على المصدر الكامل
+  const noteImg = document.querySelector(`img[src="${imageSrc}"]`);
+  const modalSrc = noteImg && noteImg.dataset.originalSrc ? noteImg.dataset.originalSrc : imageSrc;
+
+  // تعيين مصدر الصورة
+  const img = modal.querySelector('.image-modal-img');
+  img.src = modalSrc;
+
+  // عرض النافذة
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+// وظيفة إغلاق نافذة الصورة
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+    window.scrollTo(0, imageModalScrollY);
+    imageModalScrollY = 0;
+  }
+}
+
 // 🧩 رندر نوت         ازرار نسخ,تحرير,حذف,نقل
 
 function renderNotes() {
@@ -461,7 +512,8 @@ function renderNotes() {
     const div = document.createElement("div");   
  
                 // (تقليل الهامش بين الملاحظات mb)(pt=المسافة بين النص وأعلى الملاحظة من جوا
-    div.className = "note-box relative bg-[#f3f1fa] border shadow-sm pt-2 mb-1 rounded"; 
+    div.className = "note-box relative bg-[#f3f1fa] border shadow-sm pt-2 mb-1 rounded";
+    div.setAttribute('data-index', index);
     div.style.display = "flex";
     div.style.flexDirection = "column";
 
@@ -514,6 +566,18 @@ function renderNotes() {
     }
 
     span.innerHTML = modifiedText; // استخدام innerHTML لعرض الصور بدلاً من textContent
+
+    // إضافة event listeners للصور بعد إدراج المحتوى
+    setTimeout(() => {
+      const images = span.querySelectorAll('img');
+      images.forEach(img => {
+        img.addEventListener('click', (e) => {
+          e.stopPropagation(); // منع توسع الملاحظة
+          showImageModal(img.src);
+        });
+      });
+    }, 0);
+
     span.onclick = () => {
       // تبديل توسع الملاحظة الحالية
       span.classList.toggle("expanded");
@@ -735,6 +799,14 @@ function setupInputEnterKey() {
         return;
       }
     });
+
+    // إضافة تنسيق تلقائي للنصوص عند الكتابة
+    input.addEventListener("input", function() {
+      updateTextDirectionAndFont(this);
+    });
+
+    // تطبيق التنسيق الأولي
+    updateTextDirectionAndFont(input);
   }
 }
 
@@ -1203,6 +1275,10 @@ function openEditModal(index) {
     // تطبيق التنسيق التلقائي عند فتح النافذة
     autoFormatTextDirection(editTextarea);
   }
+  // حفظ موضع التمرير قبل فتح النافذة
+  modalScrollY = window.scrollY;
+  document.body.style.top = -modalScrollY + 'px';
+
   document.getElementById("editModal").classList.remove("hidden");
   document.body.classList.add("modal-open");
   isEditModalOpen = true;
@@ -1226,6 +1302,9 @@ function closeEditModal() {
 
   // إزالة قفل التمرير من الجسم عند إغلاق النافذة
   document.body.classList.remove("modal-open");
+  document.body.style.top = '';
+  window.scrollTo(0, modalScrollY);
+  modalScrollY = 0;
 
   // تم تعطيل إزالة التحديد من الصور
 }
@@ -1279,11 +1358,40 @@ function saveEditedText() {
     // حفظ في localStorage
     safeLocalStorageSet("notes", notes);
 
-    // تحديث عرض الملاحظات
-    renderNotes();
+    // حفظ فهرس الملاحظة المحررة
+    const savedIndex = editingIndex;
 
     // إغلاق نافذة التحرير
     closeEditModal();
+
+    // حفظ موضع التمرير الحالي بعد إغلاق النافذة
+    const savedScrollY = window.scrollY;
+
+    // منع القفز أثناء تحديث المحتوى
+    document.body.style.position = 'fixed';
+    document.body.style.top = -savedScrollY + 'px';
+    document.body.style.width = '100%';
+
+    // تحديث عرض الملاحظات
+    renderNotes();
+
+    // استعادة التمرير
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+
+    // تمييز الملاحظة المحررة والتمرير إليها
+    requestAnimationFrame(() => {
+      const editedNote = document.querySelector(`.note-box[data-index="${savedIndex}"]`);
+      if (editedNote) {
+        // تمييز الملاحظة المحررة
+        editedNote.classList.add('recently-edited');
+        editedNote.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          editedNote.classList.remove('recently-edited');
+        }, 5000);
+      }
+    });
 
     showToast('تم حفظ التعديلات ✅');
     console.log('تم حفظ التعديلات بنجاح');
@@ -1559,12 +1667,13 @@ function resizeImage(file, callback) {
 }
 
 // وظيفة إدراج الصورة في مربع الإدخال مع تحسينات الاستجابة
-function insertImageIntoInput(dataUrl) {
+function insertImageIntoInput(resizedDataUrl, originalDataUrl) {
   const input = document.getElementById('newNoteInput');
   if (!input) return;
 
   const img = document.createElement('img');
-  img.src = dataUrl;
+  img.src = resizedDataUrl;
+  img.dataset.originalSrc = originalDataUrl;
 
   // تحسين التنسيق حسب حجم الشاشة
   const isMobile = window.innerWidth <= 768;
@@ -1620,9 +1729,16 @@ function setupImageUpload() {
   imageInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
-      resizeImage(file, (resizedDataUrl) => {
-        insertImageIntoInput(resizedDataUrl);
-      });
+      // قراءة الصورة الأصلية
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const originalDataUrl = e.target.result;
+        // ثم تصغيرها للعرض في الملاحظات
+        resizeImage(file, (resizedDataUrl) => {
+          insertImageIntoInput(resizedDataUrl, originalDataUrl);
+        });
+      };
+      reader.readAsDataURL(file);
     }
     // إعادة تعيين input للسماح باختيار نفس الصورة مرة أخرى
     imageInput.value = '';
@@ -1638,7 +1754,7 @@ function updateImageStyles() {
     if (img.closest('#newNoteInput')) {
       img.style.maxWidth = isMobile ? '35%' : '25%';
     } else if (img.closest('#editTextarea')) {
-      img.style.maxWidth = isMobile ? '50%' : '35%';
+      img.style.maxWidth = isMobile ? '35%' : '35%';
     }
   });
 }
@@ -1944,13 +2060,55 @@ let currentSourceLang = 'auto';
 let currentTargetLang = 'ar';
 
 // وظيفة الترجمة باستخدام Google Translate API
-function translateText(providedText = null) {
+function translateText(providedText = null, htmlText = null) {
   let text;
-  if (providedText !== null) {
+  imagePlaceholders = []; // إعادة تعيين
+  if (htmlText !== null) {
+    // ترجمة نص HTML مع الحفاظ على الصور
+    let html = htmlText;
+    // استبدال الصور بعلامات نائبة
+    const imgRegex = /<img[^>]*>/gi;
+    html = html.replace(imgRegex, (match) => {
+      const placeholder = `IMAGE_PLACEHOLDER_${imagePlaceholders.length}`;
+      imagePlaceholders.push(match);
+      return placeholder;
+    });
+    // استخراج النص
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    tempDiv.innerHTML = tempDiv.innerHTML
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<div[^>]*>/gi, '')
+      .replace(/<p[^>]*>/gi, '');
+    text = tempDiv.textContent || tempDiv.innerText || "";
+    text = text.trim();
+  } else if (providedText !== null) {
     text = providedText.trim();
   } else {
     const textarea = document.getElementById("editTextarea");
-    text = textarea.innerText.trim();
+    let html = textarea.innerHTML;
+
+    // استبدال الصور بعلامات نائبة للحفاظ عليها أثناء الترجمة
+    const imgRegex = /<img[^>]*>/gi;
+    html = html.replace(imgRegex, (match) => {
+      const placeholder = `IMAGE_PLACEHOLDER_${imagePlaceholders.length}`;
+      imagePlaceholders.push(match);
+      return placeholder;
+    });
+
+    // استخراج النص العادي مع الحفاظ على الأسطر الجديدة
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    tempDiv.innerHTML = tempDiv.innerHTML
+      .replace(/<br\s*\/?>/gi, '\n')  // استبدال <br> بـ \n
+      .replace(/<\/div>/gi, '\n')      // استبدال نهاية <div> بـ \n
+      .replace(/<\/p>/gi, '\n\n')      // استبدال نهاية <p> بـ \n\n
+      .replace(/<div[^>]*>/gi, '')     // إزالة بداية <div>
+      .replace(/<p[^>]*>/gi, '');      // إزالة بداية <p>
+    text = tempDiv.textContent || tempDiv.innerText || "";
+    text = text.trim();
   }
 
   if (!text) {
@@ -1964,15 +2122,37 @@ function translateText(providedText = null) {
   currentTargetLang = isArabic ? 'en' : 'ar';
 
   // عرض النص الأصلي أولاً
-  document.getElementById("originalText").value = text;
-  updateTextDirectionAndFont(document.getElementById("originalText"));
-  document.getElementById("translatedText").value = '';
+  const originalEl = document.getElementById("originalText");
+  if (htmlText !== null) {
+    originalEl.innerHTML = htmlText;
+  } else {
+    // عرض النص الأصلي مع الصور من نافذة التحرير
+    const textarea = document.getElementById("editTextarea");
+    originalEl.innerHTML = textarea.innerHTML;
+  }
+  updateTextDirectionAndFont(originalEl);
+  document.getElementById("translatedText").innerHTML = '';
+
+  // إضافة event listeners للصور في النص الأصلي
+  setTimeout(() => {
+    const images = originalEl.querySelectorAll('img');
+    images.forEach(img => {
+      img.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showImageModal(img.src);
+      });
+    });
+  }, 0);
 
   // تعيين اللغات في القوائم المنسدلة
   document.getElementById("sourceLangSelect").value = currentSourceLang;
   document.getElementById("targetLangSelect").value = currentTargetLang;
 
   // فتح نافذة الترجمة
+  // حفظ موضع التمرير قبل فتح النافذة
+  modalScrollY = window.scrollY;
+  document.body.style.top = -modalScrollY + 'px';
+
   document.getElementById("translateModal").classList.remove("hidden");
   // إضافة قفل التمرير للجسم عند فتح نافذة الترجمة
   document.body.classList.add("modal-open");
@@ -1989,19 +2169,22 @@ function translateText(providedText = null) {
 // وظيفة ترجمة ملاحظة من القائمة
 function translateNote(index) {
   translatingNoteIndex = index;
-  const noteItem = notes[currentTab][index];
-  let text = (noteItem && typeof noteItem === "object") ? (noteItem.text || "") : noteItem;
+  let text;
 
-  // استخراج النص العادي فقط (إزالة علامات HTML)
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = text;
-  const plainText = tempDiv.textContent || tempDiv.innerText || '';
+  // إذا كان نافذة التحرير مفتوحة ونحن نترجم نفس الملاحظة، استخدم النص المحرر الحالي
+  if (isEditModalOpen && editingIndex === index) {
+    const editTextarea = document.getElementById("editTextarea");
+    text = editTextarea ? editTextarea.innerHTML : "";
+  } else {
+    const noteItem = notes[currentTab][index];
+    text = (noteItem && typeof noteItem === "object") ? (noteItem.text || "") : noteItem;
+  }
 
-  translateText(plainText);
+  translateText(null, text); // تمرير النص الأصلي للترجمة مع الحفاظ على الصور
 }
 
 // وظيفة تنفيذ الترجمة
-function performTranslation(text, sourceLang, targetLang) {
+function performTranslation(text, sourceLang, targetLang, placeholders = imagePlaceholders) {
   return new Promise((resolve, reject) => {
     const apiUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
 
@@ -2023,11 +2206,30 @@ function performTranslation(text, sourceLang, targetLang) {
           }
         }
 
-        // تحديث النص المترجم فقط (لا نحدث النص الأصلي هنا)
+        // استعادة الصور في النص المترجم
+        let finalTranslatedText = translatedText;
+        if (placeholders.length > 0) {
+          finalTranslatedText = translatedText.replace(/IMAGE_PLACEHOLDER_(\d+)/g, (match, index) => {
+            return placeholders[parseInt(index)] || match;
+          });
+        }
+
+        // تحديث النص المترجم مع الصور
         const translatedElement = document.getElementById("translatedText");
         if (translatedElement) {
-          translatedElement.value = translatedText;
+          translatedElement.innerHTML = finalTranslatedText;
           updateTextDirectionAndFont(translatedElement);
+
+          // إضافة event listeners للصور في النص المترجم
+          setTimeout(() => {
+            const images = translatedElement.querySelectorAll('img');
+            images.forEach(img => {
+              img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showImageModal(img.src);
+              });
+            });
+          }, 0);
         }
 
         resolve(translatedText);
@@ -2047,9 +2249,11 @@ function performTranslation(text, sourceLang, targetLang) {
 
 // وظيفة تبديل اللغات
 function swapLanguages() {
-  const originalText = document.getElementById("originalText").value;
-  const translatedText = document.getElementById("translatedText").value;
-  if (!originalText.trim()) return;
+  const originalEl = document.getElementById("originalText");
+  const translatedEl = document.getElementById("translatedText");
+  const originalHTML = originalEl.innerHTML;
+  const translatedHTML = translatedEl.innerHTML;
+  if (!originalEl.innerText.trim()) return;
 
   // تبديل اللغات والنصوص
   const tempLang = currentSourceLang;
@@ -2057,12 +2261,12 @@ function swapLanguages() {
   currentTargetLang = tempLang;
 
   // تبديل النصوص في الحقول
-  document.getElementById("originalText").value = translatedText;
-  document.getElementById("translatedText").value = originalText;
+  originalEl.innerHTML = translatedHTML;
+  translatedEl.innerHTML = originalHTML;
 
   // تحديث اتجاه النص وتنسيق الخط حسب المحتوى الجديد
-  updateTextDirectionAndFont(document.getElementById("originalText"));
-  updateTextDirectionAndFont(document.getElementById("translatedText"));
+  updateTextDirectionAndFont(originalEl);
+  updateTextDirectionAndFont(translatedEl);
 
   // تحديث القوائم المنسدلة
   document.getElementById("sourceLangSelect").value = currentSourceLang;
@@ -2074,6 +2278,9 @@ function closeTranslateModal() {
   document.getElementById("translateModal").classList.add("hidden");
   // إزالة قفل التمرير من الجسم
   document.body.classList.remove("modal-open");
+  document.body.style.top = '';
+  window.scrollTo(0, modalScrollY);
+  modalScrollY = 0;
   // إعادة تعيين فهرس الملاحظة المترجمة
   translatingNoteIndex = null;
 }
@@ -2082,7 +2289,7 @@ function closeTranslateModal() {
 function copyOriginalText() {
   const text = document.getElementById("originalText");
   if (text) {
-    const content = text.value || text.innerText || text.textContent || '';
+    const content = text.innerText || text.textContent || '';
     navigator.clipboard.writeText(content).then(() => {
       showToast("تم نسخ النص الأصلي ✅");
     }).catch(err => {
@@ -2110,7 +2317,7 @@ function copyOriginalText() {
 function copyTranslatedText() {
   const text = document.getElementById("translatedText");
   if (text) {
-    const content = text.value || text.innerText || text.textContent || '';
+    const content = text.innerText || text.textContent || '';
     navigator.clipboard.writeText(content).then(() => {
       showToast("تم نسخ الترجمة ✅");
     }).catch(err => {
@@ -2148,6 +2355,15 @@ let editModalImagePositions = {};
 
 // متغير لتتبع رقم الملاحظة المترجمة من القائمة
 let translatingNoteIndex = null;
+
+// متغير لحفظ موضع التمرير عند فتح النوافذ المنبثقة
+let modalScrollY = 0;
+
+// متغير لحفظ موضع التمرير عند عرض الصورة
+let imageModalScrollY = 0;
+
+// متغير لحفظ علامات الصور أثناء الترجمة
+let imagePlaceholders = [];
 
 // وظيفة تنسيق تلقائي للنص العربي والإنجليزي
 function autoFormatTextDirection(textarea) {
@@ -2362,7 +2578,8 @@ function updateImagePositionsInNotes() {
 function saveTranslationEdit() {
   try {
     // الحصول على النص المترجم من نافذة الترجمة
-    const translatedText = document.getElementById("translatedText").value.trim();
+    const translatedEl = document.getElementById("translatedText");
+    const translatedText = translatedEl ? translatedEl.innerHTML.trim() : '';
 
     if (!translatedText) {
       showToast('❌ لا يوجد نص مترجم لحفظه');
@@ -2371,14 +2588,15 @@ function saveTranslationEdit() {
 
     // التحقق من ما إذا كنا نترجم ملاحظة من القائمة أو من نافذة التحرير
     if (translatingNoteIndex !== null) {
-      // حفظ في الملاحظة الأصلية
+      // حفظ في الملاحظة الأصلية مع الحفاظ على الصور
+      const htmlTranslated = translatedText.replace(/\n/g, '<br>');
       const noteItem = notes[currentTab][translatingNoteIndex];
       if (noteItem && typeof noteItem === "object") {
-        noteItem.text = translatedText;
+        noteItem.text = htmlTranslated;
         noteItem.lastModified = new Date().toISOString();
       } else {
         notes[currentTab][translatingNoteIndex] = {
-          text: translatedText,
+          text: htmlTranslated,
           createdAt: new Date().toISOString(),
           lastModified: new Date().toISOString()
         };
@@ -2387,18 +2605,52 @@ function saveTranslationEdit() {
       // حفظ في localStorage
       safeLocalStorageSet("notes", notes);
 
+      // إعادة تعيين الفهرس
+      const savedIndex = translatingNoteIndex;
+      translatingNoteIndex = null;
+
+      // إغلاق نافذة الترجمة
+      closeTranslateModal();
+
+      // حفظ موضع التمرير الحالي بعد إغلاق النافذة
+      const savedScrollY = window.scrollY;
+
+      // منع القفز أثناء تحديث المحتوى
+      document.body.style.position = 'fixed';
+      document.body.style.top = -savedScrollY + 'px';
+      document.body.style.width = '100%';
+
       // تحديث عرض الملاحظات
       renderNotes();
 
-      // إعادة تعيين الفهرس
-      translatingNoteIndex = null;
+      // استعادة التمرير
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+
+      // تمييز الملاحظة المحررة والتمرير إليها
+      requestAnimationFrame(() => {
+        const editedNote = document.querySelector(`.note-box[data-index="${savedIndex}"]`);
+        if (editedNote) {
+          // تمييز الملاحظة المحررة
+          editedNote.classList.add('recently-edited');
+          editedNote.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            editedNote.classList.remove('recently-edited');
+          }, 5000);
+        }
+      });
 
       showToast('✅ تم حفظ النص المترجم في الملاحظة');
     } else {
-      // حفظ في نافذة التحرير (السلوك القديم)
+      // حفظ في نافذة التحرير مع الحفاظ على الصور
       const editTextarea = document.getElementById("editTextarea");
       if (editTextarea) {
-        editTextarea.textContent = translatedText;
+        // إعادة بناء HTML مع الصور والنص المترجم
+        const finalHTML = translatedText.replace(/IMAGE_PLACEHOLDER_(\d+)/g, (match, index) => {
+          return imagePlaceholders[parseInt(index)] || match;
+        }).replace(/\n/g, '<br>');
+        editTextarea.innerHTML = finalHTML;
         // تطبيق التنسيق التلقائي
         autoFormatTextDirection(editTextarea);
       }
@@ -2420,11 +2672,18 @@ function updateTextDirectionAndFont(textarea) {
   const text = textarea.value || textarea.innerText || '';
   if (!text.trim()) {
     // إذا كان النص فارغاً، استخدم الاتجاه الافتراضي حسب اللغة المحددة
-    const isOriginal = textarea.id === 'originalText';
-    const lang = isOriginal ? currentSourceLang : currentTargetLang;
-    textarea.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
-    textarea.style.textAlign = lang === 'ar' ? 'right' : 'left';
-    textarea.style.fontFamily = lang === 'ar' ? '"Segoe UI", Tahoma, sans-serif' : '"Segoe UI", Tahoma, sans-serif';
+    if (textarea.id === 'newNoteInput' || textarea.id === 'originalText' || textarea.id === 'translatedText') {
+      // للواجهة الرئيسية ونافذة الترجمة، افتراض RTL
+      textarea.style.direction = 'rtl';
+      textarea.style.textAlign = 'right';
+      textarea.style.fontFamily = '"Segoe UI", Tahoma, sans-serif';
+    } else {
+      const isOriginal = textarea.id === 'originalText';
+      const lang = isOriginal ? currentSourceLang : currentTargetLang;
+      textarea.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+      textarea.style.textAlign = lang === 'ar' ? 'right' : 'left';
+      textarea.style.fontFamily = '"Segoe UI", Tahoma, sans-serif';
+    }
     return;
   }
 
@@ -2447,11 +2706,18 @@ function updateTextDirectionAndFont(textarea) {
     textarea.style.fontFamily = '"Segoe UI", Tahoma, sans-serif';
   } else {
     // نص مختلط أو غير محدد - استخدم الاتجاه الافتراضي
-    const isOriginal = textarea.id === 'originalText';
-    const lang = isOriginal ? currentSourceLang : currentTargetLang;
-    textarea.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
-    textarea.style.textAlign = lang === 'ar' ? 'right' : 'left';
-    textarea.style.fontFamily = '"Segoe UI", Tahoma, sans-serif';
+    if (textarea.id === 'newNoteInput' || textarea.id === 'originalText' || textarea.id === 'translatedText') {
+      // للواجهة الرئيسية ونافذة الترجمة، افتراض RTL
+      textarea.style.direction = 'rtl';
+      textarea.style.textAlign = 'right';
+      textarea.style.fontFamily = '"Segoe UI", Tahoma, sans-serif';
+    } else {
+      const isOriginal = textarea.id === 'originalText';
+      const lang = isOriginal ? currentSourceLang : currentTargetLang;
+      textarea.style.direction = lang === 'ar' ? 'rtl' : 'ltr';
+      textarea.style.textAlign = lang === 'ar' ? 'right' : 'left';
+      textarea.style.fontFamily = '"Segoe UI", Tahoma, sans-serif';
+    }
   }
 }
 
@@ -2467,7 +2733,7 @@ function setupTranslationListeners() {
     currentSourceLang = this.value;
     updateTextDirectionAndFont(originalText);
     // إعادة الترجمة إذا كان هناك نص
-    const text = originalText.value.trim();
+    const text = originalText.innerText.trim();
     if (text) {
       clearTimeout(translationTimeout);
       translationTimeout = setTimeout(() => {
@@ -2484,7 +2750,7 @@ function setupTranslationListeners() {
     currentTargetLang = this.value;
     updateTextDirectionAndFont(translatedText);
     // إعادة الترجمة إذا كان هناك نص
-    const text = originalText.value.trim();
+    const text = originalText.innerText.trim();
     if (text) {
       clearTimeout(translationTimeout);
       translationTimeout = setTimeout(() => {
@@ -2502,17 +2768,36 @@ function setupTranslationListeners() {
     updateTextDirectionAndFont(this);
 
     clearTimeout(translationTimeout);
-    const text = this.value.trim();
+    const html = this.innerHTML.trim();
 
-    if (text) {
+    if (html) {
+      // استخراج النص مع الحفاظ على الصور كعلامات نائبة
+      let tempPlaceholders = [];
+      const imgRegex = /<img[^>]*>/gi;
+      let processedHtml = html.replace(imgRegex, (match) => {
+        const placeholder = `IMAGE_PLACEHOLDER_${tempPlaceholders.length}`;
+        tempPlaceholders.push(match);
+        return placeholder;
+      });
+
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = processedHtml;
+      tempDiv.innerHTML = tempDiv.innerHTML
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<div[^>]*>/gi, '')
+        .replace(/<p[^>]*>/gi, '');
+      const text = tempDiv.textContent || tempDiv.innerText || "";
+
       translationTimeout = setTimeout(() => {
-        performTranslation(text, currentSourceLang, currentTargetLang)
+        performTranslation(text, currentSourceLang, currentTargetLang, tempPlaceholders)
           .catch(error => {
             console.log('تم إلغاء الترجمة أو حدث خطأ:', error);
           });
       }, 500); // انتظار 500ms قبل الترجمة
     } else {
-      document.getElementById("translatedText").value = '';
+      document.getElementById("translatedText").innerHTML = '';
     }
   });
 
@@ -2522,9 +2807,28 @@ function setupTranslationListeners() {
     updateTextDirectionAndFont(this);
 
     clearTimeout(translationTimeout);
-    const text = this.value.trim();
+    const html = this.innerHTML.trim();
 
-    if (text) {
+    if (html) {
+      // استخراج النص مع الحفاظ على الصور كعلامات نائبة
+      let tempPlaceholders = [];
+      const imgRegex = /<img[^>]*>/gi;
+      let processedHtml = html.replace(imgRegex, (match) => {
+        const placeholder = `IMAGE_PLACEHOLDER_${tempPlaceholders.length}`;
+        tempPlaceholders.push(match);
+        return placeholder;
+      });
+
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = processedHtml;
+      tempDiv.innerHTML = tempDiv.innerHTML
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<div[^>]*>/gi, '')
+        .replace(/<p[^>]*>/gi, '');
+      const text = tempDiv.textContent || tempDiv.innerText || "";
+
       translationTimeout = setTimeout(() => {
         // تبديل اللغات مؤقتاً للترجمة العكسية
         const tempSource = currentSourceLang;
@@ -2532,7 +2836,7 @@ function setupTranslationListeners() {
         currentSourceLang = tempTarget;
         currentTargetLang = tempSource;
 
-        performTranslation(text, currentSourceLang, currentTargetLang)
+        performTranslation(text, currentSourceLang, currentTargetLang, tempPlaceholders)
           .then(() => {
             // إعادة اللغات الأصلية
             currentSourceLang = tempSource;
@@ -2546,7 +2850,7 @@ function setupTranslationListeners() {
           });
       }, 500); // انتظار 500ms قبل الترجمة
     } else {
-      document.getElementById("originalText").value = '';
+      document.getElementById("originalText").innerHTML = '';
     }
   });
 }
